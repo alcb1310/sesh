@@ -1,18 +1,26 @@
 package zoxide
 
 import (
-	"os/exec"
+	"github.com/joshmedeski/sesh/execwrap"
+	"github.com/joshmedeski/sesh/models"
 )
 
-func zoxideCmd(args []string) ([]byte, error) {
-	zoxide, err := exec.LookPath("zoxide")
-	if err != nil {
-		return nil, err
-	}
-	cmd := exec.Command(zoxide, args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	return output, nil
+type Zoxide interface {
+	Add(path string) error
+	Remove(path string) error
+	Query(path string) (models.ZoxideResult, error)
+	List() ([]models.ZoxideResult, error)
+}
+
+type ZoxideExecutor struct {
+	Exec execwrap.CmdExecutor
+}
+
+func NewZoxide(e execwrap.Executor) *Zoxide {
+	return &Zoxide{Exec: execwrap.RealExecCommand}
+}
+
+func Add(path string) error {
+	cmd, err := execwrap.Command("zoxide", "add", path)
+	return nil
 }

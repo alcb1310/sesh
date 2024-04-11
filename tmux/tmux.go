@@ -10,12 +10,13 @@ import (
 
 	"github.com/joshmedeski/sesh/config"
 	"github.com/joshmedeski/sesh/dir"
+	"github.com/joshmedeski/sesh/models"
 )
 
-func GetSession(s string) (TmuxSession, error) {
+func GetSession(s string) (models.TmuxSession, error) {
 	sessionList, err := List(Options{})
 	if err != nil {
-		return TmuxSession{}, fmt.Errorf("unable to get tmux sessions: %w", err)
+		return models.TmuxSession{}, fmt.Errorf("unable to get tmux sessions: %w", err)
 	}
 
 	altPath := dir.AlternatePath(s)
@@ -34,7 +35,7 @@ func GetSession(s string) (TmuxSession, error) {
 		}
 	}
 
-	return TmuxSession{}, fmt.Errorf(
+	return models.TmuxSession{}, fmt.Errorf(
 		"no tmux session found with name or path matching %q",
 		s,
 	)
@@ -68,7 +69,7 @@ func isAttached() bool {
 	return len(os.Getenv("TMUX")) > 0
 }
 
-func FindSession(session string) (*TmuxSession, error) {
+func FindSession(session string) (*models.TmuxSession, error) {
 	sessions, err := List(Options{})
 	if err != nil {
 		return nil, err
@@ -104,7 +105,7 @@ func runPersistentCommand(session string, command string) error {
 	return nil
 }
 
-func NewSession(s TmuxSession) (string, error) {
+func NewSession(s models.TmuxSession) (string, error) {
 	out, err := tmuxCmd(
 		[]string{"new-session", "-d", "-s", s.Name, "-c", s.Path},
 	)

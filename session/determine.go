@@ -2,52 +2,105 @@ package session
 
 import (
 	"fmt"
-	"log"
+	"path/filepath"
 
 	"github.com/joshmedeski/sesh/config"
-	"github.com/joshmedeski/sesh/dir"
 	"github.com/joshmedeski/sesh/name"
+	"github.com/joshmedeski/sesh/tmux"
+	"github.com/joshmedeski/sesh/zoxide"
 )
 
-func isConfigSession(choice string) *Session {
-	config := config.ParseConfigFile(&config.DefaultConfigDirectoryFetcher{})
-	for _, sessionConfig := range config.SessionConfigs {
-		if sessionConfig.Name == choice {
+func tmuxSession(choice string) *Session {
+	sessions, _ := tmux.List(tmux.Options{
+		HideAttached: false,
+	})
+	for _, s := range sessions {
+		if s.Name == choice {
 			return &Session{
-				Src:  "config",
-				Name: sessionConfig.Name,
-				Path: dir.AlternatePath(sessionConfig.Path),
+				Src:  "tmux",
+				Name: s.Name,
+				Path: s.Path,
 			}
 		}
 	}
 	return nil
 }
 
-func Determine(choice string, config *config.Config) (s Session, err error) {
-	configSession := isConfigSession(choice)
-	if configSession != nil {
-		return *configSession, nil
+func configByNameSession(choice string, config *config.Config) *Session {
+	for _, s := range config.SessionConfigs {
+		if s.Name == choice {
+			return &Session{
+				Src:  "config",
+				Name: s.Name,
+				Path: s.Path,
+			}
+		}
+	}
+	return nil
+}
+
+func configByPathSession(choice string, config *config.Config) *Session {
+	for _, s := range config.SessionConfigs {
+		if s.Path == choice {
+			return &Session{
+				Src:  "config",
+				Name: name.DetermineName(choice, s.Path),
+				Path: s.Path,
+			}
+		}
+	}
+	return nil
+}
+
+func zoxideSession(choice string) *Session {
+	result, _ := zoxide.Query(choice)
+	if result != nil {
+		return &Session{
+			Src:  "zoxide",
+			Name: name.DetermineName(result.Name, result.Path),
+			Path: result.Path,
+		}
+	}
+	return nil
+}
+
+func pathSession(choice string) *Session {
+	path, err := filepath.Abs(choice)
+	if err == nil {
+		return &Session{
+			Src:  "path",
+			Name: name.DetermineName(choice, path),
+			Path: path,
+		}
+	}
+	return nil
+}
+
+func Determine(choice string, config *config.Config) (s *Session, err error) {
+	tmuxSession := tmuxSession(choice)
+	if tmuxSession != nil {
+		return tmuxSession, nil
 	}
 
-	path, err := DeterminePath(choice)
-	if err != nil {
-		return s, fmt.Errorf(
-			"couldn't determine the path for %q: %w",
-			choice,
-			err,
-		)
+	configByNameSession := configByNameSession(choice, config)
+	if configByNameSession != nil {
+		return configByNameSession, nil
 	}
-	s.Path = path
 
-	sessionName := name.DetermineName(choice, path)
-	if sessionName == "" {
-		log.Fatal("Couldn't determine the session name", err)
-		return s, fmt.Errorf(
-			"couldn't determine the session name for %q",
-			choice,
-		)
+	configByPathSession := configByPathSession(choice, config)
+	if configByPathSession != nil {
+		return configByPathSession, nil
 	}
-	s.Name = sessionName
 
-	return s, nil
+	pathSession := pathSession(choice)
+	if pathSession != nil {
+		return pathSession, nil
+	}
+
+	zoxideSession := zoxideSession(choice)
+	if zoxideSession != nil {
+		return zoxideSession, nil
+	}
+
+	return nil, fmt.Errorf("session could not be determined from choice: %s", choice)
 }

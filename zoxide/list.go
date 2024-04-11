@@ -6,27 +6,22 @@ import (
 	"strings"
 
 	"github.com/joshmedeski/sesh/convert"
+	"github.com/joshmedeski/sesh/models"
 )
 
-type ZoxideResult struct {
-	Name  string
-	Path  string
-	Score float64
-}
-
-func List() ([]*ZoxideResult, error) {
+func List() ([]*models.ZoxideResult, error) {
 	output, err := zoxideCmd([]string{"query", "-ls"})
 	if err != nil {
-		return []*ZoxideResult{}, nil
+		return []*models.ZoxideResult{}, nil
 	}
 	cleanOutput := strings.TrimSpace(string(output))
 	list := strings.Split(cleanOutput, "\n")
 	listLen := len(list)
 	if listLen == 1 && list[0] == "" {
-		return []*ZoxideResult{}, nil
+		return []*models.ZoxideResult{}, nil
 	}
 
-	results := make([]*ZoxideResult, 0, listLen)
+	results := make([]*models.ZoxideResult, 0, listLen)
 	for _, line := range list {
 		trimmed := strings.Trim(line, "[]")
 		trimmed = strings.Trim(trimmed, " ")
@@ -36,7 +31,7 @@ func List() ([]*ZoxideResult, error) {
 			os.Exit(1)
 		}
 		path := fields[1]
-		results = append(results, &ZoxideResult{
+		results = append(results, &models.ZoxideResult{
 			Score: convert.StringToFloat(fields[0]),
 			Name:  convert.PathToPretty(path),
 			Path:  path,

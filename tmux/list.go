@@ -3,34 +3,9 @@ package tmux
 import (
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/joshmedeski/sesh/convert"
 )
-
-type TmuxSession struct {
-	Activity          *time.Time // Time of session last activity
-	Created           *time.Time // Time session created
-	LastAttached      *time.Time // Time session last attached
-	Alerts            []int      // List of window indexes with alerts
-	Stack             []int      // Window indexes in most recent order
-	AttachedList      []string   // List of clients session is attached to
-	GroupAttachedList []string   // List of clients sessions in group are attached to
-	GroupList         []string   // List of sessions in group
-	Group             string     // Name of session group
-	ID                string     // Unique session ID
-	Name              string     // Name of session
-	Path              string     // Working directory of session
-	Attached          int        // Number of clients session is attached to
-	GroupAttached     int        // Number of clients sessions in group are attached to
-	GroupSize         int        // Size of session group
-	Windows           int        // Number of windows in session
-	Format            bool       // 1 if format is for a session
-	GroupManyAttached bool       // 1 if multiple clients attached to sessions in group
-	Grouped           bool       // 1 if session in a group
-	ManyAttached      bool       // 1 if multiple clients attached
-	Marked            bool       // 1 if this session contains the marked pane
-}
 
 var separator = "::"
 
@@ -66,7 +41,7 @@ type Options struct {
 	HideAttached bool
 }
 
-func processSessions(o Options, sessionList []string) []*TmuxSession {
+func processSessions(o Options, sessionList []string) []*models.TmuxSession {
 	sessions := make([]*TmuxSession, 0, len(sessionList))
 	for _, line := range sessionList {
 		fields := strings.Split(line, separator) // Strings split by single space
